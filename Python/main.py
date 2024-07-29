@@ -201,7 +201,24 @@ def calculateCoords(place_coords):
     clat = lat_deg + (lat_min / 60.0)
     clon = lon_deg + (lon_min / 60.0)
 
-    return clat, clon
+    return clon, clat
+
+def haversine_distance(coord1, coord2):
+    """
+    Calculates the Haversine distance between two sets of (lat, lon) coordinates.
+    """
+    R = 6371.0  # Radius of the Earth in kilometers
+
+    lat1, lon1 = math.radians(coord1[0]), math.radians(coord1[1])
+    lat2, lon2 = math.radians(coord2[0]), math.radians(coord2[1])
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance = R * c
+
+    return distance
 
 def runMain(camStatus):
     csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
@@ -229,7 +246,6 @@ def runMain(camStatus):
 
                         # Calculate distance
                         distance = haversine_distance(camera_coords, place_coords)
-                        print(distance)
                         if distance < lowestDist :
                             lowestDist = distance
                             #print(lowestDist)
@@ -246,35 +262,6 @@ def runMain(camStatus):
                 break
 
     return camStatus
-
-def haversine_distance(coord1, coord2):
-    """
-    Calculates the Haversine distance between two sets of (lat, lon) coordinates.
-    """
-    R = 6371.0  # Radius of the Earth in kilometers
-
-    lat1, lon1 = math.radians(coord1[0]), math.radians(coord1[1])
-    lat2, lon2 = math.radians(coord2[0]), math.radians(coord2[1])
-
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distance = R * c
-
-    return distance
-
-def log_proximity(camera_coords, place_coords, distance, log_file_path):
-    """
-    Logs the proximity event to a file.
-    """
-    with open(log_file_path, 'a') as file:
-        log_time = datetime.datetime.now()
-        file.write(f"Log entry: {log_time}\n")
-        file.write(f"Camera coordinates: {camera_coords}\n")
-        file.write(f"Current coordinates: {place_coords}\n")
-        file.write(f"Distance: {distance:.5f} km\n")
-        file.write("\n")
 
 def camCheck(camStatus):
     if not camStatus:
