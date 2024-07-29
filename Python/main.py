@@ -54,7 +54,7 @@ def lcd_write(speed):
         font = ImageFont.load_default()
 
     # Define the text to be drawn
-    text = f"{int(speed)}"
+    text = f"{int(speed)}Km/h"
 
     # Calculate text size and position using textbbox
     bbox = draw.textbbox((0, 0), text, font=font)
@@ -62,8 +62,8 @@ def lcd_write(speed):
     text_height = bbox[3] - bbox[1]
 
     # Center the text
-    text_x = (width - text_width) // 2
-    text_y = (height - text_height) // 2
+    text_x = (width - text_width) // 1
+    text_y = (height - text_height) // 7
 
     # Draw text onto the image
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
@@ -71,7 +71,7 @@ def lcd_write(speed):
     # Display the image with text
     disp.image(image)
 
-    time.sleep(0.1)
+    time.sleep(1.5)
 
 def read_gps_data(ser):
     """
