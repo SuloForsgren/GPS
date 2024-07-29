@@ -1,83 +1,32 @@
-import digitalio
-import board
-from PIL import Image, ImageDraw, ImageFont
-import adafruit_rgb_display.st7735 as st7735  # Ensure this matches your display
+import pandas as pd
 
-# Configuration for CS and DC pins (these are PiTFT defaults):
-cs_pin = digitalio.DigitalInOut(board.CE0)
-dc_pin = digitalio.DigitalInOut(board.D25)
-reset_pin = digitalio.DigitalInOut(board.D24)
+# Load the CSV data
+df = pd.read_csv('road_segments.csv')
 
-# Config for display baudrate (default max is 24mhz):
-BAUDRATE = 24000000
+# Function to print the speed limits for all segments
+def print_speed_limits(dataframe):
+    for index, row in dataframe.iterrows():
+        segment_id = row['SEGM_ID']
+        speed_limit = row['ARVO']
+        start_m = row['ALKU_M']
+        end_m = row['LOPPU_M']
+        print(f"Segment ID: {segment_id}, Speed Limit: {speed_limit} km/h, Start: {start_m} m, End: {end_m} m")
 
-# Setup SPI bus using hardware SPI:
-spi = board.SPI()
+# Display the speed limits
+print_speed_limits(df)
 
-# Create the display:
-disp = st7735.ST7735R(
-    spi,
-    rotation=90,
-    x_offset=0,
-    y_offset=0,
-    cs=cs_pin,
-    dc=dc_pin,
-    rst=reset_pin,
-    baudrate=BAUDRATE,
-)
+# Function to get the speed limit of a specific segment by its ID
+def get_speed_limit_by_segment_id(dataframe, segment_id):
+    segment = dataframe[dataframe['SEGM_ID'] == segment_id]
+    if not segment.empty:
+        for index, row in segment.iterrows():
+            speed_limit = row['ARVO']
+            start_m = row['ALKU_M']
+            end_m = row['LOPPU_M']
+            print(f"Segment ID: {segment_id}, Speed Limit: {speed_limit} km/h, Start: {start_m} m, End: {end_m} m")
+    else:
+        print(f"No segment found with ID: {segment_id}")
 
-# Create blank image for drawing.
-if disp.rotation % 180 == 90:
-    height = disp.width  # we swap height/width to rotate it to landscape!
-    width = disp.height
-else:
-    width = disp.width
-    height = disp.height
-image = Image.new("RGB", (width, height))
-
-# Get drawing object to draw on image.
-draw = ImageDraw.Draw(image)
-
-# Draw a black filled box to clear the image.
-draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-
-# Load a font
-try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-except IOError:
-    font = ImageFont.load_default()
-
-# Define the text to be drawn
-text = "Hello World"
-
-# Calculate text size and position using textbbox
-bbox = draw.textbbox((0, 0), text, font=font)
-text_width = bbox[2] - bbox[0]
-text_height = bbox[3] - bbox[1]
-
-# Center the text
-text_x = (width - text_width) // 2
-text_y = (height - text_height) // 2
-
-# Draw text onto the image
-draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
-
-# Display the image with text
-disp.image(image)
-
-# Optionally, load and scale another image
-# image = Image.open("joyit-fox-widescreen.jpg")
-# image_ratio = image.width / image.height
-# screen_ratio = width / height
-# if screen_ratio < image_ratio:
-#     scaled_width = image.width * height // image.height
-#     scaled_height = height
-# else:
-#     scaled_width = width
-#     scaled_height = image.height * width // image.width
-# image = image.resize((scaled_width, scaled_height), Image.BICUBIC)
-# x = scaled_width // 2 - width // 2
-# y = scaled_height // 2 - height // 2
-# image = image.crop((x, y, x + width, y + height))
-# disp.image(image)
-
+# Example: Get the speed limit for a specific segment
+segment_id = '927_99969'
+get_speed_limit_by_segment_id(df, segment_id)
