@@ -6,6 +6,7 @@ import digitalio
 import board
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_rgb_display.st7735 as st7735  # Ensure this matches your display
+import time
 
 def lcd_write(speed):
     # Configuration for CS and DC pins (these are PiTFT defaults):
@@ -69,6 +70,8 @@ def lcd_write(speed):
 
     # Display the image with text
     disp.image(image)
+
+    time.sleep(1)
 
 def read_gps_data(ser):
     """
