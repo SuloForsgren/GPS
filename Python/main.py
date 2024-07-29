@@ -7,7 +7,6 @@ def read_gps_data(ser):
     """
     Reads GPS data from the serial port and extracts the relevant information.
     """
-    # Read data from the serial port
     if ser.in_waiting > 0:
         line = ser.readline().decode('utf-8').strip()
         if line.startswith('$GPRMC'):  # You can check for other NMEA sentences if needed
@@ -16,16 +15,24 @@ def read_gps_data(ser):
     return None
 
 def parse_gps_data(data):
-    # Example for parsing GPRMC sentence
+    """
+    Parses the GPRMC sentence to extract latitude and longitude.
+    """
     if data:
         parts = data.split(',')
-        if len(parts) >= 6:
-            lat = float(parts[3])
-            lon = float(parts[5])
-            return lat, lon
+        if len(parts) >= 6 and parts[3] and parts[5]:  # Ensure latitude and longitude fields are not empty
+            try:
+                lat = float(parts[3])
+                lon = float(parts[5])
+                return lat, lon
+            except ValueError:
+                pass  # Handle the case where conversion to float fails
     return None, None
 
-def calculateCoords(place_coords) :
+def calculateCoords(place_coords):
+    """
+    Converts GPS coordinates from NMEA format to decimal degrees.
+    """
     lat = place_coords[0]
     lon = place_coords[1]
 
@@ -41,13 +48,12 @@ def calculateCoords(place_coords) :
     clat = lat_deg + (lat_min / 60.0)
     clon = lon_deg + (lon_min / 60.0)
 
-    print(f"Latitude: {clat}, Longitude: {clon}")
+    return clat, clon
 
 def runMain(camStatus):
     csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
     log_file_path = "/home/sulof/GPS/Python/log.txt"
 
-    # Open the serial port
     with serial.Serial('/dev/serial0', 9600, timeout=1) as ser:
         while True:
             gps_data = read_gps_data(ser)
@@ -56,8 +62,7 @@ def runMain(camStatus):
                 if place_coords[0] is None or place_coords[1] is None:
                     continue
 
-                else :
-                    calculateCoords(place_coords)
+                place_coords = calculateCoords(place_coords)
 
                 with open(csv_file_path, mode='r') as file:
                     csv_reader = csv.reader(file)
@@ -70,27 +75,27 @@ def runMain(camStatus):
                         distance = haversine_distance(camera_coords, place_coords)
 
                         # Check if distance is below threshold
-                        if distance < 2:
+                        if distance < 0.3:  # 300 meters threshold
+                            log_proximity(camera_coords, place_coords, distance, log_file_path)
                             while distance > 0.01:
                                 distance -= 0.0166  # Just for testing
                                 alert(distance, log_file_path)
                             camStatus = True
                             return camStatus
 
-                # Break the loop if GPS data is not valid or other conditions
                 break
 
     return camStatus
 
 def haversine_distance(coord1, coord2):
-    # Radius of the Earth in kilometers
-    R = 6371.0
+    """
+    Calculates the Haversine distance between two sets of (lat, lon) coordinates.
+    """
+    R = 6371.0  # Radius of the Earth in kilometers
 
-    # Convert latitude and longitude from degrees to radians
     lat1, lon1 = math.radians(coord1[0]), math.radians(coord1[1])
     lat2, lon2 = math.radians(coord2[0]), math.radians(coord2[1])
 
-    # Haversine formula
     dlat = lat2 - lat1
     dlon = lon2 - lon1
     a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
@@ -98,6 +103,18 @@ def haversine_distance(coord1, coord2):
     distance = R * c
 
     return distance
+
+def log_proximity(camera_coords, place_coords, distance, log_file_path):
+    """
+    Logs the proximity event to a file.
+    """
+    with open(log_file_path, 'a') as file:
+        log_time = datetime.datetime.now()
+        file.write(f"Log entry: {log_time}\n")
+        file.write(f"Camera coordinates: {camera_coords}\n")
+        file.write(f"Current coordinates: {place_coords}\n")
+        file.write(f"Distance: {distance:.5f} km\n")
+        file.write("\n")
 
 def alert(distance, log_file_path):
     with open(log_file_path, 'a') as file:
@@ -113,4 +130,4 @@ def camCheck(camStatus):
 camStatus = False
 distance = 0
 camCheck(camStatus)
-
+  
