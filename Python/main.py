@@ -75,8 +75,7 @@ def lcd_write(speed, distance):
 
     # Display the image with text
     disp.image(image)
-    print("Drawn")
-    time.sleep(1.5)
+    time.sleep(0.1)
 
 def alert(distance):
     # Configuration for CS and DC pins (these are PiTFT defaults):
