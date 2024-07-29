@@ -123,7 +123,7 @@ def alert(distance):
         font = ImageFont.load_default()
 
     # Define the text to be drawn
-    text = f"{int(distance)}Km"
+    text = f"{int(distance)}meters"
 
     # Calculate text size and position using textbbox
     bbox = draw.textbbox((0, 0), text, font=font)
@@ -139,7 +139,7 @@ def alert(distance):
 
     # Display the image with text
     disp.image(image)
-    time.sleep(0.1)
+    time.sleep(0.5)
 
 def read_gps_data(ser):
     """
@@ -252,9 +252,9 @@ def runMain(camStatus):
 
                     # Check if distance is below threshold
                     if lowestDist < 0.3:  # 300 meters threshold
-                        while distance > 0.01:
-                            distance -= speed / 1000 
-                            alert(distance)
+                        while lowestDist > 0.01:
+                            lowestDist -= speed / 100 
+                            alert(lowestDist)
                         camStatus = True
                         return camStatus
                     else :
