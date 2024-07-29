@@ -4,7 +4,7 @@ import datetime
 import serial
 import time
 
-def read_gps_data():
+def read_gps_data(log_file_path):
     SERIAL_PORT = '/dev/ttyAMA0'  # or '/dev/ttyAMA0' depending on your Raspberry Pi model
     BAUD_RATE = 9600
     # Open the serial port
@@ -15,6 +15,9 @@ def read_gps_data():
             
             if line.startswith('$GNRMC'):  # NMEA sentence starting with $GNRMC
                 print(line)  # Print or process the line here
+                with open(log_file_path, 'a') as file:
+                    file.write("Log entry: {}\n".format(datetime.datetime.now()))
+                    file.write(f"{line}\n")
             time.sleep(1)  # Adjust the sleep time as needed
 
 def runMain(camStatus) :
@@ -32,7 +35,7 @@ def runMain(camStatus) :
             place_coords = (25.278768, 60.628445) #Get coords from gps device!
             
             # Calculate distance
-            read_gps_data()
+            read_gps_data(log_file_path)
             distance = haversine_distance(camera_coords, place_coords)
             
             #Check if distance below 300m and then Alert!
