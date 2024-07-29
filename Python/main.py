@@ -29,11 +29,15 @@ def parse_gps_data(data):
                 pass
     return None, None
 
+def calculateSpeed(speed):
+    calculatedSpeed = speed * 1.85200
+    return calculatedSpeed
+
 def get_speed(gps_data):
     if gps_data:
         parts = gps_data.split(",")
         speed = parts[7]
-        print(speed)
+        speed = calculateSpeed(speed)
         return speed
     
 
