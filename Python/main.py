@@ -229,10 +229,10 @@ def runMain(camStatus):
 
                         # Calculate distance
                         distance = haversine_distance(camera_coords, place_coords)
-
+                        print(distance)
                         if distance < lowestDist :
                             lowestDist = distance
-                        print(lowestDist)
+                            #print(lowestDist)
 
                     # Check if distance is below threshold
                     if lowestDist < 0.3:  # 300 meters threshold
