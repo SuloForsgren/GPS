@@ -16,9 +16,6 @@ def read_gps_data(ser):
     return None
 
 def parse_gps_data(data):
-    """
-    Parses the GPS data to extract latitude and longitude.
-    """
     # Example for parsing GPRMC sentence
     if data:
         parts = data.split(',')
@@ -27,6 +24,15 @@ def parse_gps_data(data):
             lon = float(parts[5])
             return lat, lon
     return None, None
+
+def calculateCoords(place_coords) :
+    lat = place_coords[0]
+    lon = place_coords[1]
+
+    clat = lat[:1] + lat[2:] / 60
+    clon = lon[:1] + lat[2:] / 60
+
+    print(clat, clon)
 
 def runMain(camStatus):
     csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
@@ -40,6 +46,9 @@ def runMain(camStatus):
                 place_coords = parse_gps_data(gps_data)
                 if place_coords[0] is None or place_coords[1] is None:
                     continue
+
+                else :
+                    calculateCoords(place_coords)
 
                 with open(csv_file_path, mode='r') as file:
                     csv_reader = csv.reader(file)
