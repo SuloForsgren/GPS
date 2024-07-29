@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 import adafruit_rgb_display.st7735 as st7735  # Ensure this matches your display
 import time
 
-def lcd_write(speed):
+def lcd_write(speed, distance):
     # Configuration for CS and DC pins (these are PiTFT defaults):
     cs_pin = digitalio.DigitalInOut(board.CE0)
     dc_pin = digitalio.DigitalInOut(board.D25)
@@ -55,6 +55,7 @@ def lcd_write(speed):
 
     # Define the text to be drawn
     text = f"{int(speed)}Km/h"
+    distance_text = f"{int(distance)}Km"
 
     # Calculate text size and position using textbbox
     bbox = draw.textbbox((0, 0), text, font=font)
@@ -65,8 +66,12 @@ def lcd_write(speed):
     text_x = (width - text_width) // 1
     text_y = (height - text_height) // 7
 
+    distance_x = (width - text_width) // 2
+    distance_y = (height - text_height) // 3
+
     # Draw text onto the image
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
+    draw.text((distance_x, distance_y), distance_text, font=font, fill=(255, 255, 255))
 
     # Display the image with text
     disp.image(image)
@@ -151,15 +156,19 @@ def runMain(camStatus):
                 place_coords = calculateCoords(place_coords)
 
                 with open(csv_file_path, mode='r') as file:
+                    lowestDist = 10000
                     csv_reader = csv.reader(file)
                     for row in csv_reader:
                         coord1 = float(row[0])
                         coord2 = float(row[1])
                         camera_coords = (coord1, coord2)
-                        lcd_write(speed)
+                        #lcd_write(speed)
 
                         # Calculate distance
                         distance = haversine_distance(camera_coords, place_coords)
+
+                        if distance < lowestDist :
+                            lowestDist = distance
 
                         # Check if distance is below threshold
                         if distance < 0.3:  # 300 meters threshold
@@ -169,7 +178,8 @@ def runMain(camStatus):
                                 alert(distance, log_file_path)
                             camStatus = True
                             return camStatus
-
+                    
+                    lcd_write(speed,lowestDist)
                 break
 
     return camStatus
