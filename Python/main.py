@@ -54,7 +54,7 @@ def lcd_write(speed):
         font = ImageFont.load_default()
 
     # Define the text to be drawn
-    text = f"{speed}"
+    text = f"{int(speed)}"
 
     # Calculate text size and position using textbbox
     bbox = draw.textbbox((0, 0), text, font=font)
@@ -100,6 +100,8 @@ def parse_gps_data(data):
     return None, None
 
 def calculateSpeed(speed):
+    if (speed == "") :
+        return 0
     calculatedSpeed = float(speed) * 1.85200
     #print(calculatedSpeed)
     return calculatedSpeed
