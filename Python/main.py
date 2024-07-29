@@ -2,7 +2,7 @@ import math
 import csv
 
 def runMain(camStatus) :
-    csv_file_path = "H:\CameraTrack\GPS\CamLocation\cams.csv"
+    csv_file_path = "/home/sulof/GPS/Python/GPS/CamLocation/cams.csv"
     
     with open(csv_file_path, mode='r') as file:
         csv_reader = csv.reader(file)
@@ -20,7 +20,7 @@ def runMain(camStatus) :
             #Check if distance below 300m and then Alert!
             if (distance < 2) :
                 while (distance > 0.01) :
-                    #distance -= 0.0166 Just for testing
+                    distance -= 0.0166 #Just for testing
                     alert(distance)
                 camStatus = True
                 return camStatus
