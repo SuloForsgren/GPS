@@ -7,6 +7,7 @@ import board
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_rgb_display.st7735 as st7735  # Ensure this matches your display
 import time
+from datetime import datetime
 
 def lcd_write(speed, distance):
     # Configuration for CS and DC pins (these are PiTFT defaults):
@@ -220,9 +221,15 @@ def haversine_distance(coord1, coord2):
 
     return distance
 
+def writeLog(log_file_path, time_now, lowestDist, place_coords) :
+    file = open(log_file_path, "a")
+    file.write(f"Written at {time_now}\n {lowestDist} Meters to next camera\nAt current position at {place_coords}")
+    file.close()
+
 def runMain(camStatus):
     csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
     log_file_path = "/home/sulof/GPS/Python/log.txt"
+    time_now = datetime.now()
 
     with serial.Serial('/dev/serial0', 9600, timeout=1) as ser:
         while True:
@@ -253,6 +260,7 @@ def runMain(camStatus):
                     # Check if distance is below threshold
                     if lowestDist < 0.3:  # 300 meters threshold
                         while lowestDist > 0.01:
+                            writeLog(log_file_path, time_now, lowestDist, place_coords)
                             lowestDist -= speed / 100 
                             alert(lowestDist)
                         camStatus = True
