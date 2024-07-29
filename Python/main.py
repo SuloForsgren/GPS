@@ -71,7 +71,7 @@ def lcd_write(speed):
     # Display the image with text
     disp.image(image)
 
-    time.sleep(1)
+    time.sleep(0.1)
 
 def read_gps_data(ser):
     """
@@ -103,7 +103,7 @@ def calculateSpeed(speed):
     if (speed == "") :
         return 0
     calculatedSpeed = float(speed) * 1.85200
-    #print(calculatedSpeed)
+    print(calculatedSpeed)
     return calculatedSpeed
 
 def get_speed(gps_data):
