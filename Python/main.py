@@ -140,7 +140,7 @@ def alert(distance):
 
     # Display the image with text
     disp.image(image)
-    time.sleep(1.5)
+    time.sleep(0.1)
 
 def read_gps_data(ser):
     """
