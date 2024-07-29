@@ -220,7 +220,7 @@ def runMain(camStatus):
                 place_coords = calculateCoords(place_coords)
 
                 with open(csv_file_path, mode='r') as file:
-                    lowestDist = 10000
+                    lowestDist = 100
                     csv_reader = csv.reader(file)
                     for row in csv_reader:
                         coord1 = float(row[0])
@@ -233,11 +233,12 @@ def runMain(camStatus):
 
                         if distance < lowestDist :
                             lowestDist = distance
+                        print(lowestDist)
 
                     # Check if distance is below threshold
-                    if distance < 0.3:  # 300 meters threshold
+                    if lowestDist < 0.3:  # 300 meters threshold
                         while distance > 0.01:
-                            distance -= speed / 1000  # Just for testing
+                            distance -= speed / 1000 
                             alert(distance)
                         camStatus = True
                         return camStatus
