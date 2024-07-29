@@ -231,6 +231,7 @@ def runMain(camStatus):
     log_file_path = "/home/sulof/GPS/Python/log.txt"
     time_now = datetime.now()
     pastCam = False
+    longer? = 0
 
     with serial.Serial('/dev/serial0', 9600, timeout=0.1) as ser:
         while True:
@@ -253,22 +254,26 @@ def runMain(camStatus):
 
                         # Calculate distance
                         distance = haversine_distance(camera_coords, place_coords)
-                        #if distance < lowestDist :
-                        #    lowestDist = distance
+                        if distance < lowestDist :
+                            lowestDist = distance
 
                     # Check if distance is below threshold
-                    if distance < 0.3 && pastCam == False:  # 300 meters threshold
+                    if lowestDist < 0.3 and pastCam == False:  # 300 meters threshold
                         #writeLog(log_file_path, time_now, lowestDist, place_coords)
                         # Update distance considering speed
-                        if distance < 0.005 :
+                        if lowestDist < 0.005 :
                             pastCam = True
-                            while distance < 0.3 :
-                                alert(distance)
-                        alert(distance)
+                            while lowestDist < 0.3 :
+                                longer? = lowestDist
+                                alert(lowestDist)
+                                if longer? > lowestDist :
+                                    break
+
+                        alert(lowestDist)
                         camStatus = True
                         return camStatus
                     else:
-                        lcd_write(speed, distance)
+                        lcd_write(speed, lowestDist)
                         pastCam = False
                 break
 
