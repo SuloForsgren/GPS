@@ -9,7 +9,7 @@ def read_gps_data(ser):
     """
     if ser.in_waiting > 0:
         line = ser.readline().decode('utf-8').strip()
-        if line.startswith('$GPRMC'):  # You can check for other NMEA sentences if needed
+        if line.startswith('$GPRMC'):
             print(f"Received GPS data: {line}")
             return line
     return None
@@ -19,15 +19,23 @@ def parse_gps_data(data):
     Parses the GPRMC sentence to extract latitude and longitude.
     """
     if data:
-        parts = data.split(',')
-        if len(parts) >= 6 and parts[3] and parts[5]:  # Ensure latitude and longitude fields are not empty
+        parts = data.split(",")
+        if len(parts) >= 6 and parts[3] and parts[5]:
             try:
                 lat = float(parts[3])
                 lon = float(parts[5])
                 return lat, lon
             except ValueError:
-                pass  # Handle the case where conversion to float fails
+                pass
     return None, None
+
+def get_speed(gps_data):
+    if gps_data:
+        parts = gps_data.split(",")
+        speed = parts[7]
+        print(speed)
+        return speed
+    
 
 def calculateCoords(place_coords):
     """
@@ -59,6 +67,7 @@ def runMain(camStatus):
             gps_data = read_gps_data(ser)
             if gps_data:
                 place_coords = parse_gps_data(gps_data)
+                speed = get_speed(gps_data)
                 if place_coords[0] is None or place_coords[1] is None:
                     continue
 
