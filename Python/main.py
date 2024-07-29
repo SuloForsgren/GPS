@@ -78,6 +78,70 @@ def lcd_write(speed, distance):
     print("Drawn")
     time.sleep(1.5)
 
+def alert(distance):
+    # Configuration for CS and DC pins (these are PiTFT defaults):
+    cs_pin = digitalio.DigitalInOut(board.CE0)
+    dc_pin = digitalio.DigitalInOut(board.D25)
+    reset_pin = digitalio.DigitalInOut(board.D24)
+
+    # Config for display baudrate (default max is 24mhz):
+    BAUDRATE = 24000000
+
+    # Setup SPI bus using hardware SPI:
+    spi = board.SPI()
+
+    # Create the display:
+    disp = st7735.ST7735R(
+        spi,
+        rotation=90,
+        x_offset=0,
+        y_offset=0,
+        cs=cs_pin,
+        dc=dc_pin,
+        rst=reset_pin,
+        baudrate=BAUDRATE,
+    )
+
+    # Create blank image for drawing.
+    if disp.rotation % 180 == 90:
+        height = disp.width  # we swap height/width to rotate it to landscape!
+        width = disp.height
+    else:
+        width = disp.width
+        height = disp.height
+    image = Image.new("RGB", (width, height))
+
+    # Get drawing object to draw on image.
+    draw = ImageDraw.Draw(image)
+
+    # Draw a black filled box to clear the image.
+    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
+
+    # Load a font
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+    except IOError:
+        font = ImageFont.load_default()
+
+    # Define the text to be drawn
+    text = f"{int(distance)}Km"
+
+    # Calculate text size and position using textbbox
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    # Center the text
+    text_x = (width - text_width) // 2
+    text_y = (height - text_height) // 3
+
+    # Draw text onto the image
+    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
+
+    # Display the image with text
+    disp.image(image)
+    time.sleep(1.5)
+
 def read_gps_data(ser):
     """
     Reads GPS data from the serial port and extracts the relevant information.
@@ -170,16 +234,15 @@ def runMain(camStatus):
                         if distance < lowestDist :
                             lowestDist = distance
 
-                        # Check if distance is below threshold
-                        if distance < 0.3:  # 300 meters threshold
-                            log_proximity(camera_coords, place_coords, distance, log_file_path)
-                            while distance > 0.01:
-                                distance -= 0.0166  # Just for testing
-                                alert(distance, log_file_path)
-                            camStatus = True
-                            return camStatus
-                    
-                    lcd_write(speed,lowestDist)
+                    # Check if distance is below threshold
+                    if distance < 0.3:  # 300 meters threshold
+                        while distance > 0.01:
+                            distance -= speed / 1000  # Just for testing
+                            alert(distance)
+                        camStatus = True
+                        return camStatus
+                    else :
+                        lcd_write(speed,lowestDist)
                 break
 
     return camStatus
@@ -213,16 +276,9 @@ def log_proximity(camera_coords, place_coords, distance, log_file_path):
         file.write(f"Distance: {distance:.5f} km\n")
         file.write("\n")
 
-def alert(distance, log_file_path):
-    with open(log_file_path, 'a') as file:
-        file.write("Log entry: {}\n".format(datetime.datetime.now()))
-        file.write(f"{distance}\n")
-
 def camCheck(camStatus):
     if not camStatus:
         runMain(camStatus)
-    else:
-        alert(distance, log_file_path)
 
 camStatus = False
 distance = 0
