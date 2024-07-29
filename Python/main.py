@@ -75,7 +75,7 @@ def lcd_write(speed, distance):
 
     # Display the image with text
     disp.image(image)
-
+    print("Drawn")
     time.sleep(1.5)
 
 def read_gps_data(ser):
