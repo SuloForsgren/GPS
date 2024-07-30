@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void openFile(file_path) {
+void openFile(const char *file_path) {
 	FILE *file = fopen(file_path, "r");
 	char buffer[100];
 	if (file == NULL) {
@@ -9,14 +9,27 @@ void openFile(file_path) {
 	}
 	else {
 		while (fgets(buffer, sizeof(buffer), file)) {
-			printf("%s", buffer);
+			 buffer[strcspn(buffer, "\n")] = 0;
+			 
+			 char *token = strtok(buffer, ",");
+			 if (token != NULL) {
+				    printf("%s\n", token);
+				    token = strtok(NULL, ",");
+				    if (token != NULL) {
+						  printf("%s\n", token);
+				    }
+				    else {
+						  printf("No 2nd column!\n");
+				    }
+			 else {
+				    printf("No columns available\n");
 		}
 	}
 	fclose(file);
 }
 
 int main(void) {
-	char file_path = "/home/sulof/GPS/CamLocation/cams.csv";
+	const char *file_path = "/home/sulof/GPS/CamLocation/cams.csv";
 	openFile(file_path);
 	return 0;
 }
