@@ -149,7 +149,7 @@ def read_gps_data(ser):
     if ser.in_waiting > 0:
         line = ser.readline().decode('utf-8').strip()
         if line.startswith('$GPRMC'):
-            #print(f"Received GPS data: {line}")
+            ser.reset_input_buffer()
             return line
     return None
 
@@ -231,7 +231,7 @@ def runMain(camStatus):
     log_file_path = "/home/sulof/GPS/Python/log.txt"
     time_now = datetime.now()
     pastCam = False
-    longer? = 0
+    longer = 0
 
     with serial.Serial('/dev/serial0', 9600, timeout=0.1) as ser:
         while True:
@@ -258,25 +258,15 @@ def runMain(camStatus):
                             lowestDist = distance
 
                     # Check if distance is below threshold
-                    if lowestDist < 0.3 and pastCam == False:  # 300 meters threshold
-                        #writeLog(log_file_path, time_now, lowestDist, place_coords)
-                        # Update distance considering speed
-                        if lowestDist < 0.005 :
+                    if lowestDist < 0.3:  # 300 meters threshold
+                        if not pastCam:
+                            alert(lowestDist)
+                        if lowestDist < 0.01:  # Assuming you pass the camera within 5 meters
                             pastCam = True
-                            while lowestDist < 0.3 :
-                                longer? = lowestDist
-                                alert(lowestDist)
-                                if longer? > lowestDist :
-                                    break
-
-                        alert(lowestDist)
-                        camStatus = True
-                        return camStatus
                     else:
-                        lcd_write(speed, lowestDist)
                         pastCam = False
-                break
-
+                        lcd_write(speed, lowestDist)
+    
     return camStatus
 
 def camCheck(camStatus):
@@ -286,4 +276,3 @@ def camCheck(camStatus):
 camStatus = False
 distance = 0
 camCheck(camStatus)
-
