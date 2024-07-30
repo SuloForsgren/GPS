@@ -1,35 +1,44 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>  // Include for strtok and strcspn
 
 void openFile(const char *file_path) {
-	FILE *file = fopen(file_path, "r");
-	char buffer[100];
-	if (file == NULL) {
-		printf("Perkeleen virhe >:(");
-	}
-	else {
-		while (fgets(buffer, sizeof(buffer), file)) {
-			 buffer[strcspn(buffer, "\n")] = 0;
-			 
-			 char *token = strtok(buffer, ",");
-			 if (token != NULL) {
-				    printf("%s\n", token);
-				    token = strtok(NULL, ",");
-				    if (token != NULL) {
-						  printf("%s\n", token);
-				    }
-				    else {
-						  printf("No 2nd column!\n");
-				    }
-			 else {
-				    printf("No columns available\n");
-		}
-	}
-	fclose(file);
+    FILE *file = fopen(file_path, "r");
+    char buffer[100];
+
+    if (file == NULL) {
+        printf("Failed to open file.\n");
+        return;
+    }
+
+    while (fgets(buffer, sizeof(buffer), file)) {
+        // Remove newline character if present
+        buffer[strcspn(buffer, "\n")] = 0;
+
+        // Tokenize the line by commas
+        char *token = strtok(buffer, ",");
+        if (token != NULL) {
+            // Print the 1st column
+            printf("1st Column: %s\n", token);
+
+            // Fetch and print the 2nd column
+            token = strtok(NULL, ",");
+            if (token != NULL) {
+                printf("2nd Column: %s\n", token);
+            } else {
+                printf("No 2nd column!\n");
+            }
+        } else {
+            printf("No columns available\n");
+        }
+    }
+
+    fclose(file);
 }
 
 int main(void) {
-	const char *file_path = "/home/sulof/GPS/CamLocation/cams.csv";
-	openFile(file_path);
-	return 0;
+    const char *file_path = "/home/sulof/GPS/CamLocation/cams.csv";
+    openFile(file_path);
+    return 0;
 }
+
