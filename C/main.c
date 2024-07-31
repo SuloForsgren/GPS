@@ -96,6 +96,7 @@ int main(void) {
     while (1) {
         bytes_read = read_from_serial_port(serial_port, buffer, sizeof(buffer) - 1);
 
+	   //If bytes read from serial then print data else print error --> sleep for 100ms
         if (bytes_read > 0) {
             buffer[bytes_read] = '\0'; // Null-terminate the string
             printf("Read %d bytes: %s\n", bytes_read, buffer);
