@@ -9,6 +9,70 @@ import adafruit_rgb_display.st7735 as st7735  # Ensure this matches your display
 import time
 from datetime import datetime
 
+def write_satellite(sat_data):
+    # Configuration for CS and DC pins (these are PiTFT defaults):
+    cs_pin = digitalio.DigitalInOut(board.CE0)
+    dc_pin = digitalio.DigitalInOut(board.D25)
+    reset_pin = digitalio.DigitalInOut(board.D24)
+
+    # Config for display baudrate (default max is 24mhz):
+    BAUDRATE = 24000000
+
+    # Setup SPI bus using hardware SPI:
+    spi = board.SPI()
+
+    # Create the display:
+    disp = st7735.ST7735R(
+        spi,
+        rotation=90,
+        x_offset=0,
+        y_offset=0,
+        cs=cs_pin,
+        dc=dc_pin,
+        rst=reset_pin,
+        baudrate=BAUDRATE,
+    )
+
+    # Create blank image for drawing.
+    if disp.rotation % 180 == 90:
+        height = disp.width  # we swap height/width to rotate it to landscape!
+        width = disp.height
+    else:
+        width = disp.width
+        height = disp.height
+    image = Image.new("RGB", (width, height))
+
+    # Get drawing object to draw on image.
+    draw = ImageDraw.Draw(image)
+
+    # Draw a black filled box to clear the image.
+    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
+
+    # Load a font
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+    except IOError:
+        font = ImageFont.load_default()
+
+    # Define the text to be drawn
+    satellites = f"Satellites:{sat_data}"
+
+    # Calculate text size and position using textbbox
+    bbox = draw.textbbox((0, 0), satellites, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    # Center the text
+    text_x = (width - text_width) // 2
+    text_y = (height - text_height) // 7
+
+    # Draw text onto the image
+    draw.text((text_x, text_y), satellites, font=font, fill=(255, 255, 255))
+
+    # Display the image with text
+    disp.image(image)
+    time.sleep(0.1)
+
 def lcd_write(speed, distance):
     # Configuration for CS and DC pins (these are PiTFT defaults):
     cs_pin = digitalio.DigitalInOut(board.CE0)
@@ -142,6 +206,20 @@ def alert(distance):
     disp.image(image)
     time.sleep(0.25)  # Increase sleep time to reduce flashing
 
+def read_gps_state(ser):
+    if ser.in_waiting > 0:
+        line = ser.readline().decode('utf-8').strip()
+        if line.startswith('$GPGLL'):
+            return line
+    return None
+
+def read_satellite_data(ser):
+    if ser.in_waiting > 0:
+        line = ser.readline().decode('utf-8').strip()
+        if line.startswith('$GPGSV'):
+            return line
+    return None
+
 def read_gps_data(ser):
     """
     Reads GPS data from the serial port and extracts the relevant information.
@@ -149,9 +227,33 @@ def read_gps_data(ser):
     if ser.in_waiting > 0:
         line = ser.readline().decode('utf-8').strip()
         if line.startswith('$GPRMC'):
-            ser.reset_input_buffer()
-            return line
+             return line
     return None
+
+def parse_gps_state(data):
+    if data:
+        parts = data.split(",")
+        try:
+            state = parts[5]
+        except ValueError:
+            pass
+        
+        if state == "V":
+            return False
+        elif state == "A":
+            return True
+        else :
+            return False
+
+def parse_sat_data(data):
+    if data:
+        parts = data.split(",")
+        try:
+            satellites = int(parts[3])
+            return satellites
+        except ValueError:
+            pass
+    return None, None
 
 def parse_gps_data(data):
     """
@@ -181,7 +283,6 @@ def get_speed(gps_data):
         speed = parts[7]
         speed = calculateSpeed(speed)
         return speed
-
 
 def calculateCoords(place_coords):
     """
@@ -226,18 +327,6 @@ def writeLog(log_file_path, time_now, lowestDist, place_coords) :
     file.write(f"Written at {time_now}\n {lowestDist} Meters to next camera\nAt current position at {place_coords}")
     file.close()
 
-def wait_for_gps_fix(ser):
-    """
-    Wait until a valid GPS fix is obtained.
-    """
-    while True:
-        gps_data = read_gps_data(ser)
-        if gps_data:
-            place_coords = parse_gps_data(gps_data)
-            if place_coords[0] is not None and place_coords[1] is not None:
-                return place_coords
-        time.sleep(1)  # Sleep for 1 second before trying again
-
 def runMain(camStatus):
     csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
     log_file_path = "/home/sulof/GPS/Python/log.txt"
@@ -246,45 +335,46 @@ def runMain(camStatus):
     longer = 0
 
     with serial.Serial('/dev/serial0', 9600, timeout=0.1) as ser:
-        print("Waiting for GPS fix...")
-        place_coords = wait_for_gps_fix(ser)
-        print("GPS fix acquired:", place_coords)
-
         while True:
-            gps_data = read_gps_data(ser)
-            if gps_data:
-                place_coords = parse_gps_data(gps_data)
-                speed = get_speed(gps_data)
-                if place_coords[0] is None or place_coords[1] is None:
-                    continue
+            read_state = read_gps_state(ser)
+            state = parse_gps_state(read_state)
+            if state == False :
+                satellite_data = read_satellite_data(ser)
+                satellites = parse_sat_data(satellite_data)
+                write_satellite(satellites)
+            elif state == True :
+                gps_data = read_gps_data(ser)
+                if gps_data:
+                    place_coords = parse_gps_data(gps_data)
+                    speed = get_speed(gps_data)
+                    if place_coords[0] is None or place_coords[1] is None:
+                        continue
 
-                place_coords = calculateCoords(place_coords)
+                    place_coords = calculateCoords(place_coords)
 
-                with open(csv_file_path, mode='r') as file:
-                    lowestDist = float('inf')
-                    csv_reader = csv.reader(file)
-                    for row in csv_reader:
-                        coord1 = float(row[0])
-                        coord2 = float(row[1])
-                        camera_coords = (coord1, coord2)
+                    with open(csv_file_path, mode='r') as file:
+                        lowestDist = float('inf')
+                        csv_reader = csv.reader(file)
+                        for row in csv_reader:
+                            coord1 = float(row[0])
+                            coord2 = float(row[1])
+                            camera_coords = (coord1, coord2)
 
-                        # Calculate distance
-                        distance = haversine_distance(camera_coords, place_coords)
-                        if distance < lowestDist:
-                            lowestDist = distance
+                            # Calculate distance
+                            distance = haversine_distance(camera_coords, place_coords)
+                            if distance < lowestDist :
+                                lowestDist = distance
 
-                    # Check if distance is below threshold
-                    if lowestDist < 0.3:  # 300 meters threshold
-                        if not pastCam:
-                            alert(lowestDist)
-                        if lowestDist < 0.01:  # Assuming you pass the camera within 5 meters
-                            pastCam = True
-                    else:
-                        pastCam = False
-                        lcd_write(speed, lowestDist)
-
-    return camStatus
-
+                        # Check if distance is below threshold
+                        if lowestDist < 0.3:  # 300 meters threshold
+                            if not pastCam:
+                                alert(lowestDist)
+                            if lowestDist < 0.01:  # Assuming you pass the camera within 5 meters
+                                pastCam = True
+                        else:
+                            pastCam = False
+                            lcd_write(speed, lowestDist)      
+        return camStatus
 
 def camCheck(camStatus):
     if not camStatus:

@@ -226,6 +226,18 @@ def writeLog(log_file_path, time_now, lowestDist, place_coords) :
     file.write(f"Written at {time_now}\n {lowestDist} Meters to next camera\nAt current position at {place_coords}")
     file.close()
 
+def wait_for_gps_fix(ser):
+    """
+    Wait until a valid GPS fix is obtained.
+    """
+    while True:
+        gps_data = read_gps_data(ser)
+        if gps_data:
+            place_coords = parse_gps_data(gps_data)
+            if place_coords[0] is not None and place_coords[1] is not None:
+                return place_coords
+        time.sleep(1)  # Sleep for 1 second before trying again
+
 def runMain(camStatus):
     csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
     log_file_path = "/home/sulof/GPS/Python/log.txt"
@@ -234,6 +246,10 @@ def runMain(camStatus):
     longer = 0
 
     with serial.Serial('/dev/serial0', 9600, timeout=0.1) as ser:
+        print("Waiting for GPS fix...")
+        place_coords = wait_for_gps_fix(ser)
+        print("GPS fix acquired:", place_coords)
+
         while True:
             gps_data = read_gps_data(ser)
             if gps_data:
@@ -254,7 +270,7 @@ def runMain(camStatus):
 
                         # Calculate distance
                         distance = haversine_distance(camera_coords, place_coords)
-                        if distance < lowestDist :
+                        if distance < lowestDist:
                             lowestDist = distance
 
                     # Check if distance is below threshold
@@ -268,6 +284,7 @@ def runMain(camStatus):
                         lcd_write(speed, lowestDist)
 
     return camStatus
+
 
 def camCheck(camStatus):
     if not camStatus:
