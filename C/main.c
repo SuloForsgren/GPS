@@ -64,10 +64,10 @@ void openFile(const char *file_path) {
         // Tokenize the line by commas
         char *token = strtok(buffer, ",");
         if (token != NULL) {
-            // Print the 1st column
+            // Print Longitude
             printf("Longitude: %s\n", token);
 
-            // Fetch and print the 2nd column
+            // Print Latitude
             token = strtok(NULL, ",");
             if (token != NULL) {
                 printf("Latitude: %s\n", token);
@@ -82,6 +82,14 @@ void openFile(const char *file_path) {
     fclose(file);
 }
 
+void get_correct_data(buffer) {
+	//printf("GPS-data %s", buffer);
+    char *token = strtok(buffer,",");
+    if (token != NULL) {
+        printf("GPS Code: %s", buffer);
+    }
+}
+
 int main(void) {
     const char *serial_device = "/dev/serial0";
     int serial_port = open_serial_port(serial_device);
@@ -92,9 +100,11 @@ int main(void) {
 
     char buffer[256];
     int bytes_read;
+    char gps_data_row[120];
 
     while (1) {
         bytes_read = read_from_serial_port(serial_port, buffer, sizeof(buffer) - 1);
+	gps_data_row = get_correct_data(buffer);
 
 	   //If bytes read from serial then print data else print error --> sleep for 100ms
         if (bytes_read > 0) {
