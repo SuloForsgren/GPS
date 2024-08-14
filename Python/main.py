@@ -5,381 +5,183 @@ import serial
 import digitalio
 import board
 from PIL import Image, ImageDraw, ImageFont
-import adafruit_rgb_display.st7735 as st7735  # Ensure this matches your display
+import adafruit_rgb_display.st7735 as st7735
 import time
 from datetime import datetime
 
-def write_satellite(sat_data):
-    # Configuration for CS and DC pins (these are PiTFT defaults):
-    cs_pin = digitalio.DigitalInOut(board.CE0)
-    dc_pin = digitalio.DigitalInOut(board.D25)
-    reset_pin = digitalio.DigitalInOut(board.D24)
+class data_handler():
+    def __init__(self, data_type, index, serial) :
+        self.data_type = data_type
+        self.index = index
+        self.serial = serial
 
-    # Config for display baudrate (default max is 24mhz):
-    BAUDRATE = 24000000
-
-    # Setup SPI bus using hardware SPI:
-    spi = board.SPI()
-
-    # Create the display:
-    disp = st7735.ST7735R(
-        spi,
-        rotation=90,
-        x_offset=0,
-        y_offset=0,
-        cs=cs_pin,
-        dc=dc_pin,
-        rst=reset_pin,
-        baudrate=BAUDRATE,
-    )
-
-    # Create blank image for drawing.
-    if disp.rotation % 180 == 90:
-        height = disp.width  # we swap height/width to rotate it to landscape!
-        width = disp.height
-    else:
-        width = disp.width
-        height = disp.height
-    image = Image.new("RGB", (width, height))
-
-    # Get drawing object to draw on image.
-    draw = ImageDraw.Draw(image)
-
-    # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-
-    # Load a font
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-    except IOError:
-        font = ImageFont.load_default()
-
-    # Define the text to be drawn
-    satellites = f"Satellites:{sat_data}"
-
-    # Calculate text size and position using textbbox
-    bbox = draw.textbbox((0, 0), satellites, font=font)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-
-    # Center the text
-    text_x = (width - text_width) // 2
-    text_y = (height - text_height) // 7
-
-    # Draw text onto the image
-    draw.text((text_x, text_y), satellites, font=font, fill=(255, 255, 255))
-
-    # Display the image with text
-    disp.image(image)
-    time.sleep(0.1)
-
-def lcd_write(speed, distance):
-    # Configuration for CS and DC pins (these are PiTFT defaults):
-    cs_pin = digitalio.DigitalInOut(board.CE0)
-    dc_pin = digitalio.DigitalInOut(board.D25)
-    reset_pin = digitalio.DigitalInOut(board.D24)
-
-    # Config for display baudrate (default max is 24mhz):
-    BAUDRATE = 24000000
-
-    # Setup SPI bus using hardware SPI:
-    spi = board.SPI()
-
-    # Create the display:
-    disp = st7735.ST7735R(
-        spi,
-        rotation=90,
-        x_offset=0,
-        y_offset=0,
-        cs=cs_pin,
-        dc=dc_pin,
-        rst=reset_pin,
-        baudrate=BAUDRATE,
-    )
-
-    # Create blank image for drawing.
-    if disp.rotation % 180 == 90:
-        height = disp.width  # we swap height/width to rotate it to landscape!
-        width = disp.height
-    else:
-        width = disp.width
-        height = disp.height
-    image = Image.new("RGB", (width, height))
-
-    # Get drawing object to draw on image.
-    draw = ImageDraw.Draw(image)
-
-    # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-
-    # Load a font
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-    except IOError:
-        font = ImageFont.load_default()
-
-    # Define the text to be drawn
-    text = f"{int(speed)}Km/h"
-    distance_text = f"{int(distance * 1000)}m"
-
-    # Calculate text size and position using textbbox
-    bbox = draw.textbbox((0, 0), text, font=font)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-
-    # Center the text
-    text_x = (width - text_width) // 2
-    text_y = (height - text_height) // 7
-
-    distance_x = (width - text_width) // 3
-    distance_y = (height - text_height) // 1.5
-
-    # Draw text onto the image
-    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
-    draw.text((distance_x, distance_y), distance_text, font=font, fill=(255, 255, 255))
-
-    # Display the image with text
-    disp.image(image)
-    time.sleep(0.1)
-
-def alert(distance):
-    # Configuration for CS and DC pins (these are PiTFT defaults):
-    cs_pin = digitalio.DigitalInOut(board.CE0)
-    dc_pin = digitalio.DigitalInOut(board.D25)
-    reset_pin = digitalio.DigitalInOut(board.D24)
-
-    # Config for display baudrate (default max is 24mhz):
-    BAUDRATE = 24000000
-
-    # Setup SPI bus using hardware SPI:
-    spi = board.SPI()
-
-    # Create the display:
-    disp = st7735.ST7735R(
-        spi,
-        rotation=90,
-        x_offset=0,
-        y_offset=0,
-        cs=cs_pin,
-        dc=dc_pin,
-        rst=reset_pin,
-        baudrate=BAUDRATE,
-    )
-
-    # Create blank image for drawing.
-    if disp.rotation % 180 == 90:
-        height = disp.width  # we swap height/width to rotate it to landscape!
-        width = disp.height
-    else:
-        width = disp.width
-        height = disp.height
-    image = Image.new("RGB", (width, height))
-
-    # Get drawing object to draw on image.
-    draw = ImageDraw.Draw(image)
-
-    # Draw a black filled box to clear the image.
-    draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
-
-    # Load a font
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-    except IOError:
-        font = ImageFont.load_default()
-
-    # Define the text to be drawn
-    text = f"{int(distance * 1000)} meters"
-
-    # Calculate text size and position using textbbox
-    bbox = draw.textbbox((0, 0), text, font=font)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-
-    # Center the text
-    text_x = (width - text_width) // 2
-    text_y = (height - text_height) // 3
-
-    # Draw text onto the image
-    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255))
-
-    # Display the image with text
-    disp.image(image)
-    time.sleep(0.25)  # Increase sleep time to reduce flashing
-
-def read_gps_state(ser):
-    if ser.in_waiting > 0:
-        line = ser.readline().decode('utf-8').strip()
-        if line.startswith('$GPGLL'):
-            return line
-    return None
-
-def read_satellite_data(ser):
-    if ser.in_waiting > 0:
-        line = ser.readline().decode('utf-8').strip()
-        if line.startswith('$GPGSV'):
-            return line
-    return None
-
-def read_gps_data(ser):
-    """
-    Reads GPS data from the serial port and extracts the relevant information.
-    """
-    if ser.in_waiting > 0:
-        line = ser.readline().decode('utf-8').strip()
-        if line.startswith('$GPRMC'):
-             return line
-    return None
-
-def parse_gps_state(data):
-    if data:
-        parts = data.split(",")
-        try:
-            state = parts[5]
-        except ValueError:
-            pass
-        
-        if state == "V":
-            return False
-        elif state == "A":
-            return True
-        else :
-            return False
-
-def parse_sat_data(data):
-    if data:
-        parts = data.split(",")
-        try:
-            satellites = int(parts[3])
-            return satellites
-        except ValueError:
-            pass
-    return None, None
-
-def parse_gps_data(data):
-    """
-    Parses the GPRMC sentence to extract latitude and longitude.
-    """
-    if data:
-        parts = data.split(",")
-        if len(parts) >= 6 and parts[3] and parts[5]:
+    def parse_data(self, data):
+        if data:
+            parts = data.split(",")
             try:
-                lat = float(parts[3])
-                lon = float(parts[5])
-                return lat, lon
+                parsed_data = parts[self.index]
+                if parsed_data == "" :
+                    return "Empty"
+                else :
+                    return parsed_data
             except ValueError:
                 pass
-    return None, None
+        return None
 
-def calculateSpeed(speed):
-    if (speed == "") :
-        return 0
-    calculatedSpeed = float(speed) * 1.85200
-    print(calculatedSpeed)
-    return calculatedSpeed
-
-def get_speed(gps_data):
-    if gps_data:
-        parts = gps_data.split(",")
-        speed = parts[7]
-        speed = calculateSpeed(speed)
-        return speed
-
-def calculateCoords(place_coords):
-    """
-    Converts GPS coordinates from NMEA format to decimal degrees.
-    """
-    lat = place_coords[0]
-    lon = place_coords[1]
-
-    # Split the latitude into degrees and minutes
-    lat_deg = int(lat // 100)
-    lat_min = lat % 100
-
-    # Split the longitude into degrees and minutes
-    lon_deg = int(lon // 100)
-    lon_min = lon % 100
-
-    # Convert to decimal degrees
-    clat = lat_deg + (lat_min / 60.0)
-    clon = lon_deg + (lon_min / 60.0)
-
-    return clon, clat
-
-def haversine_distance(coord1, coord2):
-    """
-    Calculates the Haversine distance between two sets of (lat, lon) coordinates.
-    """
-    R = 6371.0  # Radius of the Earth in kilometers
-
-    lat1, lon1 = math.radians(coord1[0]), math.radians(coord1[1])
-    lat2, lon2 = math.radians(coord2[0]), math.radians(coord2[1])
-
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distance = R * c
-
-    return distance
-
-def writeLog(log_file_path, time_now, lowestDist, place_coords) :
-    file = open(log_file_path, "a")
-    file.write(f"Written at {time_now}\n {lowestDist} Meters to next camera\nAt current position at {place_coords}")
-    file.close()
-
-def runMain(camStatus):
-    csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
-    log_file_path = "/home/sulof/GPS/Python/log.txt"
-    time_now = datetime.now()
-    pastCam = False
-    longer = 0
-
-    with serial.Serial('/dev/serial0', 9600, timeout=0.1) as ser:
+    def read_data(self):
         while True:
-            read_state = read_gps_state(ser)
-            state = parse_gps_state(read_state)
-            if state == False :
-                satellite_data = read_satellite_data(ser)
-                satellites = parse_sat_data(satellite_data)
-                write_satellite(satellites)
-            elif state == True :
-                gps_data = read_gps_data(ser)
-                if gps_data:
-                    place_coords = parse_gps_data(gps_data)
-                    speed = get_speed(gps_data)
-                    if place_coords[0] is None or place_coords[1] is None:
-                        continue
+            if self.serial.in_waiting > 0:
+                line = self.serial.readline().decode('utf-8').strip()
+                if line.startswith(f"{self.data_type}"):
+                    return self.parse_data(line)
+        return None
 
-                    place_coords = calculateCoords(place_coords)
 
-                    with open(csv_file_path, mode='r') as file:
-                        lowestDist = float('inf')
-                        csv_reader = csv.reader(file)
-                        for row in csv_reader:
-                            coord1 = float(row[0])
-                            coord2 = float(row[1])
-                            camera_coords = (coord1, coord2)
+class lcd_handler() :
+    def __init__(self, cd_pin, dc_pin, reset_pin, baudrate) :
+        self.cs_pin = digitalio.DigitalInOut(cs_pin)
+        self.dc_pin = digitalio.DigitalInOut(dc_pin)
+        self.reset_pin = digitalio.DigitalInOut(reset_pin)
+        self.baudrate = baudrate
+        self.spi = board.SPI()
+        
+        self.disp = st7735.ST7735R(
+        self.spi,
+        rotation=90,
+        x_offset=0,
+        y_offset=0,
+        cs=self.cs_pin,
+        dc=self.dc_pin,
+        rst=self.reset_pin,
+        baudrate=self.baudrate,)
 
-                            # Calculate distance
-                            distance = haversine_distance(camera_coords, place_coords)
-                            if distance < lowestDist :
-                                lowestDist = distance
 
-                        # Check if distance is below threshold
-                        if lowestDist < 0.3:  # 300 meters threshold
-                            if not pastCam:
-                                alert(lowestDist)
-                            if lowestDist < 0.01:  # Assuming you pass the camera within 5 meters
-                                pastCam = True
-                        else:
-                            pastCam = False
-                            lcd_write(speed, lowestDist)      
-        return camStatus
+    def screen_write(self, data) :
+        if self.disp.rotation % 180 == 90:
+            height = self.disp.width  # we swap height/width to rotate it to landscape!
+            width = self.disp.height
+        else:
+            width = self.disp.width
+            height = self.disp.height
+        image = Image.new("RGB", (width, height))
 
-def camCheck(camStatus):
-    if not camStatus:
-        runMain(camStatus)
+        # Get drawing object to draw on image.
+        draw = ImageDraw.Draw(image)
 
-camStatus = False
-distance = 0
-camCheck(camStatus)
+        # Draw a black filled box to clear the image.
+        draw.rectangle((0, 0, width, height), outline=0, fill=(0, 0, 0))
+
+        # Load a font
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        except IOError:
+            font = ImageFont.load_default()
+
+        # Define the text to be drawn
+        write_data = f"{data}"
+
+        # Calculate text size and position using textbbox
+        bbox = draw.textbbox((0, 0), write_data, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+
+        # Center the text
+        text_x = (width - text_width) // 2
+        text_y = (height - text_height) // 7
+
+        # Draw text onto the image
+        draw.text((text_x, text_y), write_data, font=font, fill=(255, 255, 255))
+
+        # Display the image with text
+        self.disp.image(image)
+        time.sleep(0.1)
+
+class calculate():
+    def __init__(self, location_coords, csv_file_path):
+        self.location_coords = location_coords
+        self.csv_file_path = csv_file_path
+
+    def haversine_distance(self, coord1, coord2):
+        R = 6371.0
+
+        lat1, lon1 = float(coord1[0]), float(coord1[1])
+        lat2, lon2 = float(coord2[0]), float(coord2[1])
+
+        lat1, lon1 = math.radians(coord1[0]), math.radians(coord1[1])
+        lat2, lon2 = math.radians(coord2[0]), math.radians(coord2[1])
+
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        distance = R * c
+
+        return distance
+
+    def read_csv(self):
+        with open(self.csv_file_path, mode='r') as file:
+            lowest_dist = float('inf')
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+                coord1 = float(row[0])
+                coord2 = float(row[1])
+                camera_coords = (coord1, coord2)
+
+                distance = self.haversine_distance(camera_coords, self.location_coords)
+                
+                if distance < lowest_dist :
+                    lowest_dist = distance
+
+            return lowest_dist
+
+# 1. Valid data? 2. Satellites 3. Latitude? 4. Speed?
+gps_data_types = ["$GPGLL", "$GPGLL", "$GPGLL", "$GPGGA", "$GPRMC", "$GPVTG"]
+gps_data_index = [6, 1, 3, 7, 3, 7]
+index = 0
+parsed_data = []
+csv_file_path = "/home/sulof/GPS/CamLocation/cams.csv"
+
+
+while True:
+    for gps_data_type in gps_data_types :
+        with serial.Serial('/dev/ttyACM0', 9600, timeout=0.1) as ser:
+            if index == 6 :
+                index = 0
+            data = data_handler(f"{gps_data_type}", gps_data_index[index], ser)
+            parsed = data.read_data()
+            if len(parsed_data) < 6 :
+                parsed_data.append(parsed)
+            elif len(parsed_data) >= 6 :
+                parsed_data[index] = parsed
+            print(parsed_data)
+            index += 1
+
+            cs_pin = board.CE0
+            dc_pin = board.D25
+            reset_pin = board.D24
+            baudrate = 24000000
+
+            write = lcd_handler(cs_pin, dc_pin, reset_pin, baudrate)
+            """if parsed_data[0] == "V" and len(parsed_data) > 1:
+                helper = 0
+                for type in gps_data_types :
+                    if type == "$GPGGA" and len(parsed_data) > 3:
+                        write.screen_write(parsed_data[helper])
+                    helper += 1
+            elif parsed_data[0] == "A" and len(parsed_data) > 3 :
+                #write.screen_write(parsed_data[-1])
+                place_coords = (float(parsed_data[1]), float(parsed_data[2]))
+                print(place_coords)
+                distance = calculate(place_coords, csv_file_path)
+                to_cam = distance.read_csv()
+                to_cam = round(to_cam, 2)
+                write.screen_write(to_cam)
+            """
+
+            place_coords = (60.627886, 25.251083)
+            distance = calculate(place_coords, csv_file_path)
+            to_cam = distance.read_csv()
+            to_cam = round(to_cam)
+            kilometers = round(to_cam/1000)
+            meters = to_cam%1000
+            write.screen_write(f"{kilometers} km")
