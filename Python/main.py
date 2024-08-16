@@ -179,10 +179,10 @@ while True:
                 kilometers = int(kilometers[0])
                 meters = str(to_cam).split(".")[1]
                 meters = meters[:3]
-                print(meters)
                 speed = 1.852 * float(parsed_data[7])
                 speed = round(speed)
                 meters = int(meters)
+                print(meters)
 
                 if meters < 300 and not went_past:
                     # Display approaching message when entering radius
@@ -201,3 +201,4 @@ while True:
                     write.screen_write(f"{meters} m", 1)
                     write.screen_write(f"{speed} km/h", 2)
                     time.sleep(0.4)
+
